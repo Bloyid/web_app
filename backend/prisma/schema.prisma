@@ -1,0 +1,70 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String    @unique 
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  chats         Chat[]    @relation("ChatParticipants")
+  messages      Message[]
+  sentRequests  FriendRequest[] @relation("SentFriendRequests")
+  recvRequests  FriendRequest[] @relation("ReceivedFriendRequests")
+  friends       Friend[]   @relation("UserFriends")
+  friendsOf     Friend[]   @relation("FriendUsers")
+}
+
+model Friend {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+  user      User     @relation("UserFriends", fields: [userId], references: [id])
+  friend    User     @relation("FriendUsers", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+model FriendRequest {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sender      User     @relation("SentFriendRequests", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedFriendRequests", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+}
+
+model Chat {
+  id            String    @id @default(uuid())
+  type          String    @default("DIRECT")
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastMessageAt DateTime  @default(now())
+  participants  User[]    @relation("ChatParticipants")
+  messages      Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  chatId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
